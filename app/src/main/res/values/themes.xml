@@ -1,0 +1,20 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Base application theme -->
+    <style name="Base.Theme.Teste1" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here -->
+        <!-- Uncomment this if you want to use it -->
+        <!-- <item name="colorPrimary">@color/Lavender</item> -->
+        <item name="colorPrimaryVariant">@color/Lavender</item>
+    </style>
+
+    <!-- Main Theme -->
+    <style name="Theme.Teste1" parent="Base.Theme.Teste1" />
+
+    <!-- Rounded Image View Style -->
+    <style name="roundedImageViewRounded">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+</resources>

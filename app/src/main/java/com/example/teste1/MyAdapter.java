@@ -52,8 +52,9 @@ public class MyAdapter extends RecyclerView.Adapter<MyViewHolder> {
             public void onClick(View view) {
                 Intent intent = new Intent(context, DetailActivity.class);
                 intent.putExtra("Image", datalist.get(holder.getAdapterPosition()).getDataImage());
-                intent.putExtra("Descrição", datalist.get(holder.getAdapterPosition()).getDataDesc());
+                intent.putExtra("Description", datalist.get(holder.getAdapterPosition()).getDataDesc());
                 intent.putExtra("Title", datalist.get(holder.getAdapterPosition()).getDataTitle());
+                intent.putExtra("Language", datalist.get(holder.getAdapterPosition()).getDataLang());
                 intent.putExtra("Key", datalist.get(holder.getAdapterPosition()).getKey());
 
 
@@ -67,9 +68,11 @@ public class MyAdapter extends RecyclerView.Adapter<MyViewHolder> {
     public int getItemCount() {
         return datalist.size(); // Adicionado ponto e vírgula
     }
+
     public void searchDataList(ArrayList<Dataclass> searchList) {
-        datalist = searchList;
-        notifyDataSetChanged();
+        datalist.clear(); // Limpa a lista original
+        datalist.addAll(searchList); // Adiciona os resultados da pesquisa
+        notifyDataSetChanged(); // Atualiza a RecyclerView
     }
 }
 

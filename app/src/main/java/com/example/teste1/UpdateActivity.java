@@ -47,29 +47,33 @@ public class UpdateActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_update);
 
+        // Inicialização das views
         updateButton = findViewById(R.id.updateButton);
         updateDesc = findViewById(R.id.updateDesc);
         updateImage = findViewById(R.id.updateImage);
         updateLang = findViewById(R.id.updateLang);
         updateTitle = findViewById(R.id.updateTitle);
 
+        // Configuração do ActivityResultLauncher para selecionar a imagem
         ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 new ActivityResultCallback<ActivityResult>() {
                     @Override
                     public void onActivityResult(ActivityResult result) {
-                        if (result.getResultCode() == Activity.RESULT_OK){
+                        if (result.getResultCode() == Activity.RESULT_OK) {
                             Intent data = result.getData();
                             uri = data.getData();
                             updateImage.setImageURI(uri);
                         } else {
-                            Toast.makeText(UpdateActivity.this, "No Image Selected", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(UpdateActivity.this, "Nenhuma imagem selecionada", Toast.LENGTH_SHORT).show();
                         }
                     }
                 }
         );
+
+        // Receber os dados passados da MainActivity
         Bundle bundle = getIntent().getExtras();
-        if (bundle != null){
+        if (bundle != null) {
             Glide.with(UpdateActivity.this).load(bundle.getString("Image")).into(updateImage);
             updateTitle.setText(bundle.getString("Title"));
             updateDesc.setText(bundle.getString("Description"));
@@ -77,8 +81,11 @@ public class UpdateActivity extends AppCompatActivity {
             key = bundle.getString("Key");
             oldImageURL = bundle.getString("Image");
         }
-        databaseReference = FirebaseDatabase.getInstance().getReference("Android Tutorials").child(key);
 
+        // Referência ao nó correto do Firebase Database
+        databaseReference = FirebaseDatabase.getInstance().getReference("Tutorials").child(key);
+
+        // Clique para selecionar nova imagem
         updateImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -87,62 +94,90 @@ public class UpdateActivity extends AppCompatActivity {
                 activityResultLauncher.launch(photoPicker);
             }
         });
+
+        // Clique para salvar as alterações
         updateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 saveData();
                 Intent intent = new Intent(UpdateActivity.this, MainActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(intent);
+                finish();
             }
         });
     }
-    public void saveData(){
-        storageReference = FirebaseStorage.getInstance().getReference().child("Android Images").child(uri.getLastPathSegment());
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(UpdateActivity.this);
-        builder.setCancelable(false);
-        builder.setView(R.layout.progress_layout);
-        AlertDialog dialog = builder.create();
-        dialog.show();
+    // Função para fazer o upload da nova imagem e atualizar os dados
+    public void saveData() {
+        // Verifica se o usuário escolheu uma nova imagem
+        if (uri != null) {
+            storageReference = FirebaseStorage.getInstance().getReference().child("Android Images").child(uri.getLastPathSegment());
 
-        storageReference.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-            @Override
-            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                Task<Uri> uriTask = taskSnapshot.getStorage().getDownloadUrl();
-                while (!uriTask.isComplete());
-                Uri urlImage = uriTask.getResult();
-                imageUrl = urlImage.toString();
-                updateData();
-                dialog.dismiss();
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                dialog.dismiss();
-            }
-        });
+            // Mostrar diálogo de progresso
+            AlertDialog.Builder builder = new AlertDialog.Builder(UpdateActivity.this);
+            builder.setCancelable(false);
+            builder.setView(R.layout.progress_layout);
+            AlertDialog dialog = builder.create();
+            dialog.show();
+
+            // Fazer o upload da nova imagem para o Firebase Storage
+            storageReference.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                    Task<Uri> uriTask = taskSnapshot.getStorage().getDownloadUrl();
+                    while (!uriTask.isComplete()) ; // Aguarda o download da URL
+                    Uri urlImage = uriTask.getResult();
+                    imageUrl = urlImage.toString();
+
+                    updateData(); // Chama updateData() após obter a URL da imagem
+                    dialog.dismiss();
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    dialog.dismiss();
+                    Toast.makeText(UpdateActivity.this, "Erro ao carregar a imagem", Toast.LENGTH_SHORT).show();
+                }
+            });
+        } else {
+            // Se a imagem não for alterada, atualizar apenas os dados
+            imageUrl = oldImageURL;  // Usar a URL da imagem antiga
+            updateData();
+        }
     }
-    public void updateData(){
+
+    // Função para atualizar os dados no Firebase Database
+    public void updateData() {
         title = updateTitle.getText().toString().trim();
         desc = updateDesc.getText().toString().trim();
-        lang = updateLang.getText().toString();
+        lang = updateLang.getText().toString().trim();
 
+        // Verificação para campos vazios
+        if (title.isEmpty() || desc.isEmpty() || lang.isEmpty()) {
+            Toast.makeText(this, "Por favor, preencha todos os campos", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Atualizar os dados no Firebase Database
         Dataclass dataclass = new Dataclass(title, desc, lang, imageUrl);
-
         databaseReference.setValue(dataclass).addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
             public void onComplete(@NonNull Task<Void> task) {
-                if (task.isSuccessful()){
-                    StorageReference reference = FirebaseStorage.getInstance().getReferenceFromUrl(oldImageURL);
-                    reference.delete();
-                    Toast.makeText(UpdateActivity.this, "Updated", Toast.LENGTH_SHORT).show();
+                if (task.isSuccessful()) {
+                    // Deletar a imagem antiga do Firebase Storage
+                    if (!imageUrl.equals(oldImageURL)) {
+                        StorageReference reference = FirebaseStorage.getInstance().getReferenceFromUrl(oldImageURL);
+                        reference.delete();
+                    }
+                    Toast.makeText(UpdateActivity.this, "Atualizado com sucesso!", Toast.LENGTH_SHORT).show();
                     finish();
                 }
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Toast.makeText(UpdateActivity.this, e.getMessage().toString(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(UpdateActivity.this, "Erro ao atualizar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

@@ -1,16 +1,20 @@
 package com.example.teste1;
 
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.util.Log;
+
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import android.content.Intent;
-import android.os.Bundle;
-import android.view.View;
-import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.database.DataSnapshot;
@@ -23,21 +27,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+
     FloatingActionButton fab;
+    RecyclerView recyclerView;
+    List<Dataclass> datalist;
     DatabaseReference databaseReference;
     ValueEventListener eventListener;
-    RecyclerView recyclerView;
-    List<Dataclass> dataList;
-    MyAdapter adapter;
     SearchView searchView;
+    MyAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
 
-        recyclerView = findViewById(R.id.recyclerView);
         fab = findViewById(R.id.fab);
+        recyclerView = findViewById(R.id.recyclerView);
         searchView = findViewById(R.id.search);
         searchView.clearFocus();
 
@@ -50,71 +61,60 @@ public class MainActivity extends AppCompatActivity {
         AlertDialog dialog = builder.create();
         dialog.show();
 
-        dataList = new ArrayList<>();
-        adapter = new MyAdapter(dataList, MainActivity.this);
+        datalist = new ArrayList<>();
+        adapter = new MyAdapter(datalist, MainActivity.this);
         recyclerView.setAdapter(adapter);
 
         databaseReference = FirebaseDatabase.getInstance().getReference("Tutorials");
+
         eventListener = databaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                dataList.clear();
-                for (DataSnapshot itemSnapshot: snapshot.getChildren()) {
-                    Dataclass dataClass = itemSnapshot.getValue(Dataclass.class);
-
-                    // Verifica se o dataClass não é nulo
-                    if (dataClass != null) {
-                        dataClass.setKey(itemSnapshot.getKey());
-                        dataList.add(dataClass);
+                datalist.clear(); // Limpa os dados antigos
+                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
+                    Dataclass dataclass = dataSnapshot.getValue(Dataclass.class);
+                    if (dataclass != null) { // Verifica se o objeto não é nulo
+                        dataclass.setKey(dataSnapshot.getKey()); // Define a chave
+                        datalist.add(dataclass); // Adiciona o item à lista
                     }
                 }
-                adapter.notifyDataSetChanged();
-                dialog.dismiss();
+                Log.d("DataUpdate", "Total items loaded: " + datalist.size()); // Log do total de itens
+                adapter.notifyDataSetChanged(); // Atualiza a RecyclerView
+                dialog.dismiss(); // Esconde o diálogo de carregamento
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("DataError", "Database error: " + error.getMessage()); // Log de erro
                 dialog.dismiss();
-                Toast.makeText(MainActivity.this, "Erro ao carregar os dados", Toast.LENGTH_SHORT).show();
             }
         });
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
+                // Ação ao submeter a busca (se necessário)
                 return false;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                searchList(newText);
+                searchList(newText);  // Atualiza a lista com a pesquisa
                 return true;
             }
         });
 
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, UploadActivity.class);
-                startActivity(intent);
-            }
+        fab.setOnClickListener(view -> {
+            Intent intent = new Intent(MainActivity.this, UploadActivity.class);
+            startActivity(intent);
         });
-    }
-
-    // Remover o listener para evitar vazamentos de memória
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (eventListener != null) {
-            databaseReference.removeEventListener(eventListener);
-        }
     }
 
     public void searchList(String text) {
         ArrayList<Dataclass> searchList = new ArrayList<>();
-        for (Dataclass dataClass: dataList) {
-            if (dataClass.getDataTitle().toLowerCase().contains(text.toLowerCase())) {
-                searchList.add(dataClass);
+        for (Dataclass dataclass : datalist) {
+            if (dataclass.getDataTitle().toLowerCase().contains(text.toLowerCase())) {
+                searchList.add(dataclass);
             }
         }
         adapter.searchDataList(searchList);

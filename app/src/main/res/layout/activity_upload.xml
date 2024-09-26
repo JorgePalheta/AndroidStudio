@@ -75,7 +75,7 @@
                     android:background="@drawable/lavender_border"
                     android:layout_marginTop="20dp"
                     android:padding="16dp"
-                    android:hint="SeucNome"
+                    android:hint="Seu Nome"
                     android:gravity="start|center_vertical"
                     android:textColor="@color/Lavender"/>
 

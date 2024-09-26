@@ -82,7 +82,6 @@ public class MainActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged(); // Atualiza a RecyclerView
                 dialog.dismiss(); // Esconde o diálogo de carregamento
             }
-
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 Log.e("DataError", "Database error: " + error.getMessage()); // Log de erro

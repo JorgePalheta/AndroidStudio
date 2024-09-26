@@ -28,7 +28,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Update Data"
+                android:text="Update Imagem"
                 android:textSize="30sp"
                 android:textAlignment="center"
                 android:textColor="@color/Lavender"/>
@@ -48,7 +48,7 @@
                 android:background="@drawable/lavender_border"
                 android:layout_marginTop="20dp"
                 android:padding="16dp"
-                android:hint="Enter topic name"
+                android:hint="Titulo"
                 android:gravity="start|center_vertical"
                 android:textColor="@color/Lavender"/>
 
@@ -59,7 +59,7 @@
                 android:background="@drawable/lavender_border"
                 android:layout_marginTop="20dp"
                 android:padding="16dp"
-                android:hint="Enter description"
+                android:hint="Descrição"
                 android:gravity="start|center_vertical"
                 android:textColor="@color/Lavender"/>
 
@@ -70,14 +70,14 @@
                 android:background="@drawable/lavender_border"
                 android:layout_marginTop="20dp"
                 android:padding="16dp"
-                android:hint="Enter language"
+                android:hint="Seu Nome"
                 android:gravity="start|center_vertical"
                 android:textColor="@color/Lavender"/>
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
-                android:text="Update"
+                android:text="Editar"
                 android:id="@+id/updateButton"
                 android:textSize="18sp"
                 android:layout_marginTop="20dp"

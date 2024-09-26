@@ -19,7 +19,6 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
-import com.example.teste1.Dataclass;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -34,8 +33,10 @@ public class UpdateActivity extends AppCompatActivity {
 
     ImageView updateImage;
     Button updateButton;
-    EditText updateDesc, updateTitle, updateLang;
-    String title, desc, lang;
+    EditText updateDesc;
+    EditText title; // Renamed from updateTopic to title
+    EditText updateLang;
+    String topic, desc, lang;
     String imageUrl;
     String key, oldImageURL;
     Uri uri;
@@ -52,7 +53,7 @@ public class UpdateActivity extends AppCompatActivity {
         updateDesc = findViewById(R.id.updateDesc);
         updateImage = findViewById(R.id.updateImage);
         updateLang = findViewById(R.id.updateLang);
-        updateTitle = findViewById(R.id.updateTitle);
+        title = findViewById(R.id.updateTitle); // A variável foi renomeada
 
         // Configuração do ActivityResultLauncher para selecionar a imagem
         ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(
@@ -75,7 +76,7 @@ public class UpdateActivity extends AppCompatActivity {
         Bundle bundle = getIntent().getExtras();
         if (bundle != null) {
             Glide.with(UpdateActivity.this).load(bundle.getString("Image")).into(updateImage);
-            updateTitle.setText(bundle.getString("Title"));
+            title.setText(bundle.getString("Title")); // Mudança aqui para title
             updateDesc.setText(bundle.getString("Description"));
             updateLang.setText(bundle.getString("Language"));
             key = bundle.getString("Key");
@@ -126,11 +127,16 @@ public class UpdateActivity extends AppCompatActivity {
                 @Override
                 public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                     Task<Uri> uriTask = taskSnapshot.getStorage().getDownloadUrl();
-                    while (!uriTask.isComplete()) ; // Aguarda o download da URL
-                    Uri urlImage = uriTask.getResult();
-                    imageUrl = urlImage.toString();
-
-                    updateData(); // Chama updateData() após obter a URL da imagem
+                    uriTask.addOnCompleteListener(new OnCompleteListener<Uri>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Uri> task) {
+                            if (task.isSuccessful()) {
+                                Uri urlImage = task.getResult();
+                                imageUrl = urlImage.toString();
+                                updateData(); // Chama updateData() após obter a URL da imagem
+                            }
+                        }
+                    });
                     dialog.dismiss();
                 }
             }).addOnFailureListener(new OnFailureListener() {
@@ -149,18 +155,18 @@ public class UpdateActivity extends AppCompatActivity {
 
     // Função para atualizar os dados no Firebase Database
     public void updateData() {
-        title = updateTitle.getText().toString().trim();
+        String titleText = title.getText().toString().trim(); // Use title.getText() correctly
         desc = updateDesc.getText().toString().trim();
         lang = updateLang.getText().toString().trim();
 
         // Verificação para campos vazios
-        if (title.isEmpty() || desc.isEmpty() || lang.isEmpty()) {
+        if (titleText.isEmpty() || desc.isEmpty() || lang.isEmpty()) {
             Toast.makeText(this, "Por favor, preencha todos os campos", Toast.LENGTH_SHORT).show();
             return;
         }
 
         // Atualizar os dados no Firebase Database
-        Dataclass dataclass = new Dataclass(title, desc, lang, imageUrl);
+        Dataclass dataclass = new Dataclass(imageUrl, lang, desc, titleText); // Certifique-se de que a ordem dos parâmetros esteja correta
         databaseReference.setValue(dataclass).addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
             public void onComplete(@NonNull Task<Void> task) {
